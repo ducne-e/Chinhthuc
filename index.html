@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Một món quà dành cho bạn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=EB+Garamond:ital@0;1&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== BIẾN MÀU ===== */
+:root{ --ink:#6b4a4a; }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body,#app{height:100%;width:100%;overflow:hidden}
+body{font-family:"Quicksand",system-ui,sans-serif;background:#e7a9b0;color:var(--ink);-webkit-font-smoothing:antialiased;touch-action:none}
+.stage{position:fixed;inset:0;opacity:0;pointer-events:none;transition:opacity 1.1s ease}
+.stage.on{opacity:1;pointer-events:auto}
+
+/* A. cánh đồng bay qua */
+#flythrough{background:#e79;overflow:hidden}
+#field{position:absolute;inset:-20%;background:url(assets/field.jpg) center/cover;transform:scale(3.2) rotate(-6deg);transform-origin:54% 60%}
+#flythrough.run #field{animation:fly 4s cubic-bezier(.45,.02,.35,1) forwards}
+@keyframes fly{0%{transform:scale(3.4) rotate(-8deg)}70%{opacity:1}100%{transform:scale(1) rotate(0);opacity:0}}
+
+/* B. tia sáng mặt trời */
+#sunburst{display:grid;place-items:center;background:radial-gradient(60% 60% at 50% 52%,#f6dada 0%,#ecb3bb 55%,#d98a96 100%)}
+#rays{position:absolute;width:200vmax;height:200vmax;
+  background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.55) 0deg 1.1deg,transparent 1.1deg 7deg);
+  -webkit-mask:radial-gradient(closest-side,transparent 8%,#000 40%,transparent 78%);
+  mask:radial-gradient(closest-side,transparent 8%,#000 40%,transparent 78%);
+  animation:spin 24s linear infinite;opacity:.7}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* C/D. màn hình phong bì */
+#card{background:linear-gradient(180deg,#f0c9cd 0%,#e6a9b0 45%,#d99098 100%)}
+#garland{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:140vw;max-width:1700px;pointer-events:none;filter:drop-shadow(0 18px 24px rgba(120,40,55,.22));transition:transform 1.2s ease}
+.float-rose{position:absolute;width:120px;opacity:.9;pointer-events:none;animation:drift 9s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-26px) rotate(8deg)}}
+.card-inner{position:relative;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+.tap-hdr{position:absolute;top:7%;left:0;right:0;text-align:center;font-size:14px;letter-spacing:.34em;color:#9a5f66;text-transform:uppercase}
+.namerow{font-size:15px;letter-spacing:.3em;text-transform:uppercase;color:#9a5f66}
+.namerow b{font-family:"Cormorant Garamond",serif;font-style:italic;font-weight:500;font-size:34px;letter-spacing:.02em;text-transform:none;margin-left:.4em;color:#7a4750}
+#env{width:300px;max-width:74vw;cursor:pointer;filter:drop-shadow(0 20px 30px rgba(120,40,55,.28));animation:bob 5s ease-in-out infinite;transition:transform .5s ease}
+#env:hover{transform:scale(1.04)}
+#env.opening{animation:envOpen 1s ease forwards}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes envOpen{to{transform:scale(2.4);opacity:0}}
+
+/* ảnh trượt ra từ phong bì */
+#thumb-reveal{position:fixed;background:center/cover no-repeat #fff;border-radius:10px;box-shadow:0 16px 48px rgba(90,40,45,.45);pointer-events:none;z-index:200;opacity:0;clip-path:inset(60% 0 0 0 round 10px)}
+#thumb-reveal.pull{animation:pullOut .85s cubic-bezier(.22,.8,.4,1) forwards}
+#thumb-reveal.hide{animation:fadeAway .4s ease forwards}
+@keyframes pullOut{0%{opacity:0;clip-path:inset(60% 0 0 0 round 10px);transform:translateY(30px)}20%{opacity:1}100%{opacity:1;clip-path:inset(0% 0 0 0 round 10px);transform:translateY(-24px)}}
+@keyframes fadeAway{to{opacity:0;transform:translateY(-24px) scale(.95)}}
+
+/* E. bảng kỷ niệm */
+#book{background:linear-gradient(160deg,#e9b9b6 0%,#d59a98 60%,#c98c86 100%);cursor:grab}
+#book.grab{cursor:grabbing}
+#board{position:absolute;left:50%;top:50%;width:0;height:0;will-change:transform}
+.bg-ghost{position:absolute;opacity:.16;filter:grayscale(.3);pointer-events:none;transform:translate(-50%,-50%)}
+.card{position:absolute;transform:translate(-50%,-50%);filter:drop-shadow(0 14px 26px rgba(90,40,45,.28));cursor:grab;user-select:none;transition:box-shadow .2s}
+.card.drag{cursor:grabbing;z-index:999}
+.tape{position:absolute;top:-12px;left:50%;width:78px;height:26px;transform:translateX(-50%) rotate(-3deg);background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.5)}
+.polaroid{background:#fdf8ef;padding:14px 14px 40px;width:230px;border-radius:3px}
+.polaroid img{width:100%;display:block;border-radius:2px}
+.polaroid .num{position:absolute;bottom:12px;left:16px;font-size:12px;color:#b09a90;letter-spacing:.1em}
+.closeb{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.7);display:grid;place-items:center;font-size:12px;color:#8a6;cursor:pointer}
+
+/* thẻ lời nhắn */
+.msg{background:#fbf6d6;width:330px;border-radius:6px;padding:26px 26px 34px;font-family:"EB Garamond",serif}
+.msg .yy{width:96px;display:block;margin:4px auto 2px}
+.msg .yin{font-family:"Cormorant Garamond",serif;font-style:italic;color:#caa0a8;font-size:22px;text-align:center}
+.msg .yang{font-family:"Cormorant Garamond",serif;font-style:italic;color:#9fb38a;font-size:22px;text-align:center;margin-bottom:14px}
+.msg p{font-size:17px;line-height:1.5;color:#6b5a4a;text-align:center}
+
+/* thẻ cào */
+.scratch{width:240px;background:#fdf8ef;padding:14px 14px 40px;border-radius:3px}
+.scratch .num{position:absolute;bottom:12px;left:16px;font-size:12px;color:#b09a90}
+.scratch-wrap{position:relative;width:212px;height:268px;border-radius:2px;overflow:hidden}
+.scratch-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+.scratch-wrap canvas{position:absolute;inset:0;touch-action:none}
+
+/* thẻ media (YouTube / Spotify) */
+.media{width:300px;border-radius:14px;overflow:hidden;background:#101012;color:#fff;font-family:"Quicksand",sans-serif}
+.yt .bar{display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:12px;color:#ccc}
+.yt .screen{height:150px;background:#000 center/cover;display:grid;place-items:center;position:relative}
+.yt .screen iframe{width:100%;height:100%;border:0}
+.playb{width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;cursor:pointer}
+.playb::after{content:"";border-left:16px solid #222;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.yt .foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:11px;color:#aaa}
+.spotify{width:260px;border-radius:14px;background:#121212;color:#fff;padding:12px;display:flex;gap:12px;align-items:center}
+.spotify .art{width:54px;height:54px;border-radius:6px;background:linear-gradient(135deg,#e98aa6,#7a4750);flex:0 0 auto}
+.spotify .meta{flex:1;min-width:0}
+.spotify .t{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spotify .a{font-size:12px;color:#9a9a9a}
+.spotify .sp{width:34px;height:34px;border-radius:50%;background:#1db954;display:grid;place-items:center;cursor:pointer}
+.spotify .sp::after{content:"";border-left:11px solid #000;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:3px}
+
+/* bản đồ kỷ niệm */
+.memmap{width:360px;background:#fdf8ef;border-radius:14px;padding:14px}
+.memmap .mh{font-size:11px;letter-spacing:.22em;color:#b58;text-transform:uppercase}
+.memmap h3{font-family:"Cormorant Garamond",serif;font-size:24px;color:#5a4a4a;margin:-2px 0 10px}
+.memmap .map{position:relative;height:230px;border-radius:10px;overflow:hidden}
+.memmap .map img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(1);width:100%;transition:transform .25s ease}
+.memmap .pin{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:#ccc center/cover;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.memmap .pin::after{content:"";position:absolute;left:50%;bottom:-9px;transform:translateX(-50%);border-top:10px solid #fff;border-left:7px solid transparent;border-right:7px solid transparent}
+.memmap .zoom{position:absolute;top:50px;right:24px;display:flex;flex-direction:column;gap:8px}
+.memmap .zoom button{width:34px;height:34px;border:0;border-radius:50%;cursor:pointer;font-size:18px;color:#fff}
+.zin{background:#3aa76d}.zout{background:#d98a96}
+.hint-tap{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-family:"Cormorant Garamond",serif;font-style:italic;color:#fff;font-size:18px;text-shadow:0 2px 10px rgba(120,40,55,.5);opacity:.9;pointer-events:none}
+
+/* họa tiết thực vật phủ mờ */
+body::after{content:"";position:fixed;inset:0;background:url('https://flowerisblooming.com/botanical-pattern.webp') repeat;opacity:.10;pointer-events:none;z-index:9998}
+
+@media (prefers-reduced-motion:reduce){
+  #field,#env,.float-rose,#rays{animation:none!important}
+  #flythrough.run #field{opacity:0;transform:scale(1)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- A: cánh đồng -->
+  <section id="flythrough" class="stage"><div id="field"></div></section>
+  <!-- B: tia sáng -->
+  <section id="sunburst"   class="stage"><div id="rays"></div></section>
+  <!-- C/D: phong bì -->
+  <section id="card" class="stage">
+    <img id="garland" src="assets/garland.png" alt="">
+    <div class="card-inner">
+      <div class="tap-hdr">Nhấn vào phong bì</div>
+      <div class="namerow">Từ <b id="fromName">Zoey</b></div>
+      <img id="env" src="assets/envelope.png" alt="Phong bì">
+      <div class="namerow">Đến <b id="forName">Jim</b></div>
+    </div>
+  </section>
+  <!-- thumbnail trượt ra từ phong bì -->
+  <div id="thumb-reveal"></div>
+  <!-- E: bảng kỷ niệm -->
+  <section id="book" class="stage">
+    <div id="board"></div>
+    <div class="hint-tap">Kéo để khám phá</div>
+  </section>
+</div>
+
+<script>
+/* ===== CẤU HÌNH — đổi nội dung quà ở đây ===== */
+const CONFIG = {
+  from:    "Zoey",
+  to:      "Jim",
+  message: "I hope you take the time you need to rest, recover, and regain your strength. Wishing you comfort, peace, and a smooth recovery surrounded by people who care about you.",
+  yin:     "You're the Yin",
+  yang:    "to my yang",
+  photos: [
+    { src:"assets/photo01.jpg", num:"01", rot:-6 },
+    { src:"assets/photo03.jpg", num:"03", rot:5  },
+    { src:"assets/photo05.jpg", num:"05", rot:-3 },
+  ],
+  youtube:   { title:"Founders Podcast", id:"" },                          // thay id="dQw4..." để nhúng video thật
+  spotify:   { title:"Just the Two of Us", artist:"Bill Withers", uri:"" }, // thay uri="track/xxxx" để nhúng nhạc thật
+  map:       { pin:"assets/photo01.jpg" },
+  thumbnail: "assets/thumora.png",
+};
+
+/* đọc tham số ?from= / ?for= từ URL */
+const qs = new URLSearchParams(location.search);
+if(qs.get("from")) CONFIG.from = qs.get("from");
+if(qs.get("for"))  CONFIG.to   = qs.get("for");
+
+document.getElementById("fromName").textContent = CONFIG.from;
+document.getElementById("forName").textContent  = CONFIG.to;
+
+const stages = {
+  fly:   document.getElementById("flythrough"),
+  burst: document.getElementById("sunburst"),
+  card:  document.getElementById("card"),
+  book:  document.getElementById("book"),
+};
+const show = el => el.classList.add("on");
+const hide = el => el.classList.remove("on");
+
+/* ===== TRÌNH TỰ INTRO: A → B → C ===== */
+function runIntro(){
+  show(stages.fly);
+  requestAnimationFrame(()=> stages.fly.classList.add("run"));
+  setTimeout(()=> show(stages.burst),                           2600);
+  setTimeout(()=> hide(stages.fly),                            3800);
+  setTimeout(()=>{ show(stages.card); spawnFloatRoses(); },    4200);
+  setTimeout(()=> hide(stages.burst),                          5200);
+}
+runIntro();
+
+function spawnFloatRoses(){
+  const imgs = ["assets/rose_pink.png","assets/rose_red.png","assets/rose_white.png"];
+  for(let i=0; i<6; i++){
+    const r = document.createElement("img");
+    r.className = "float-rose";
+    r.src = imgs[i%3];
+    r.style.cssText = `left:${8+Math.random()*84}%;top:${12+Math.random()*40}%;width:${70+Math.random()*70}px;animation-delay:${Math.random()*4}s;animation-duration:${7+Math.random()*4}s`;
+    stages.card.appendChild(r);
+  }
+}
+
+/* ===== NHẤN PHONG BÌ → ẢNH → BẢNG KỶ NIỆM ===== */
+const env = document.getElementById("env");
+env.addEventListener("click", ()=>{
+  env.classList.add("opening");
+  document.getElementById("garland").style.transform = "translateX(-50%) translateY(-120px)";
+
+  const rect = env.getBoundingClientRect();
+  const th   = document.getElementById("thumb-reveal");
+  th.style.cssText = `left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.width*1.35}px`;
+  th.style.backgroundImage = `url(${CONFIG.thumbnail})`;
+  th.className = "";
+
+  setTimeout(()=> th.classList.add("pull"),                                          280);
+  setTimeout(()=>{ th.classList.add("hide"); hide(stages.card); buildBook(); show(stages.book); }, 1900);
+});
+
+/* ===== BẢNG KỶ NIỆM ===== */
+const board = document.getElementById("board");
+let pan = {x:0, y:0};
+const applyPan = ()=> board.style.transform = `translate(${pan.x}px,${pan.y}px)`;
+
+function makeCard(html, x, y, rot=0){
+  const c = document.createElement("div");
+  c.className = "card";
+  c.style.left = x+"px"; c.style.top = y+"px";
+  Object.assign(c.dataset, {x, y, rot});
+  c.style.transform = `translate(-50%,-50%) rotate(${rot}deg)`;
+  c.innerHTML = html;
+  board.appendChild(c);
+  enableDragCard(c);
+  return c;
+}
+
+function buildBook(){
+  if(board.childElementCount) return;
+
+  // ảnh mờ phong bì phía sau
+  const ghost = document.createElement("img");
+  Object.assign(ghost, {className:"bg-ghost", src:"assets/envelope.png"});
+  Object.assign(ghost.style, {left:"40px", top:"60px", width:"520px"});
+  board.appendChild(ghost);
+
+  // thẻ lời nhắn (giữa màn hình)
+  makeCard(`<span class="closeb">✕</span><div class="msg">
+    <img class="yy" src="assets/yinyang.png" alt="">
+    <div class="yin">${CONFIG.yin}</div>
+    <div class="yang">${CONFIG.yang}</div>
+    <p>${CONFIG.message}</p></div>`, 60, 40, -2);
+
+  // ảnh polaroid
+  const pos = [[-360,-120],[-330,180],[300,230]];
+  CONFIG.photos.forEach((p,i)=> makeCard(
+    `<span class="closeb">✕</span><span class="tape"></span>
+     <div class="polaroid"><img src="${p.src}" alt=""><span class="num">${p.num}</span></div>`,
+    pos[i][0], pos[i][1], p.rot));
+
+  // thẻ cào
+  const sc = makeCard(`<span class="closeb">✕</span><div class="scratch">
+    <div class="scratch-wrap"><img src="assets/bouquet.png" alt="surprise"><canvas width="212" height="268"></canvas></div>
+    <span class="num">02</span></div>`, -120, 320, 4);
+  initScratch(sc.querySelector("canvas"));
+
+  // thẻ YouTube
+  const yt = CONFIG.youtube;
+  makeCard(`<span class="closeb">✕</span><div class="media yt">
+    <div class="bar">▶ ${yt.title}</div>
+    <div class="screen" data-yt="${yt.id}">${yt.id ? "" : '<div class="playb"></div>'}</div>
+    <div class="foot"><span>YouTube</span></div></div>`, 420, -160, 6);
+
+  // thẻ Spotify
+  const sp = CONFIG.spotify;
+  makeCard(`<div class="media spotify" data-sp="${sp.uri}">
+    <div class="art"></div>
+    <div class="meta"><div class="t">${sp.title}</div><div class="a">${sp.artist}</div></div>
+    <div class="sp"></div></div>`, 470, 70, -5);
+
+  // thẻ bản đồ kỷ niệm
+  makeCard(`<span class="closeb">✕</span><div class="memmap">
+    <div class="mh">Bản đồ kỷ niệm</div><h3>Bản đồ kỷ niệm</h3>
+    <div class="map"><img src="assets/memmap.jpg" alt="map">
+    <div class="pin" style="background-image:url(${CONFIG.map.pin})"></div>
+    <div class="zoom"><button class="zin">+</button><button class="zout">−</button></div>
+    </div></div>`, 120, 520, 2);
+
+  wireCardButtons();
+}
+
+/* nút đóng, media và phóng to bản đồ */
+function wireCardButtons(){
+  board.querySelectorAll(".closeb").forEach(b=>{
+    b.addEventListener("pointerdown", e=> e.stopPropagation());
+    b.addEventListener("click", e=>{
+      e.stopPropagation();
+      const c = b.closest(".card");
+      c.style.transition = "transform .35s,opacity .35s";
+      c.style.opacity = "0"; c.style.pointerEvents = "none";
+      setTimeout(()=> c.remove(), 350);
+    });
+  });
+  // phát YouTube → nhúng iframe
+  board.querySelectorAll(".yt .screen").forEach(s=>{
+    const pb = s.querySelector(".playb"); if(!pb) return;
+    pb.addEventListener("pointerdown", e=> e.stopPropagation());
+    pb.addEventListener("click", e=>{
+      e.stopPropagation();
+      const id = s.dataset.yt;
+      if(id) s.innerHTML = `<iframe src="https://www.youtube.com/embed/${id}?autoplay=1" allow="autoplay" allowfullscreen></iframe>`;
+      else pb.style.transform = "scale(.9)";
+    });
+  });
+  // phát Spotify → nhúng iframe
+  board.querySelectorAll(".spotify").forEach(c=>{
+    const sp = c.querySelector(".sp");
+    sp.addEventListener("pointerdown", e=> e.stopPropagation());
+    sp.addEventListener("click", e=>{
+      e.stopPropagation();
+      const uri = c.dataset.sp;
+      if(uri) c.outerHTML = `<div class="card" style="left:${c.style.left};top:${c.style.top}">
+        <iframe style="border-radius:14px" src="https://open.spotify.com/embed/${uri}" width="300" height="80" frameborder="0" allow="autoplay"></iframe></div>`;
+    });
+  });
+  // phóng to / thu nhỏ bản đồ
+  board.querySelectorAll(".memmap .map").forEach(m=>{
+    const img = m.querySelector("img"); let z = 1;
+    const set = ()=> img.style.transform = `translate(-50%,-50%) scale(${z})`;
+    m.querySelector(".zin").addEventListener("pointerdown",  e=> e.stopPropagation());
+    m.querySelector(".zout").addEventListener("pointerdown", e=> e.stopPropagation());
+    m.querySelector(".zin").addEventListener("click",  e=>{ e.stopPropagation(); z=Math.min(2.4,z+0.3); set(); });
+    m.querySelector(".zout").addEventListener("click", e=>{ e.stopPropagation(); z=Math.max(1,z-0.3); set(); });
+  });
+}
+
+/* ===== KÉO TỪNG THẺ RIÊNG LẺ ===== */
+function enableDragCard(card){
+  let dragging=false, sx,sy,ox,oy,rot;
+  card.addEventListener("pointerdown", e=>{
+    if(e.target.closest(".closeb,.playb,.sp,.zin,.zout,iframe,canvas")) return;
+    e.stopPropagation(); dragging=true;
+    card.classList.add("drag"); card.setPointerCapture(e.pointerId);
+    sx=e.clientX; sy=e.clientY;
+    ox=parseFloat(card.dataset.x); oy=parseFloat(card.dataset.y); rot=parseFloat(card.dataset.rot);
+  });
+  card.addEventListener("pointermove", e=>{
+    if(!dragging) return;
+    const nx=ox+(e.clientX-sx), ny=oy+(e.clientY-sy);
+    card.dataset.x=nx; card.dataset.y=ny;
+    card.style.left=nx+"px"; card.style.top=ny+"px";
+    card.style.transform=`translate(-50%,-50%) rotate(${rot}deg)`;
+  });
+  const stop = ()=>{ dragging=false; card.classList.remove("drag"); };
+  card.addEventListener("pointerup",          stop);
+  card.addEventListener("pointercancel",      stop);
+  card.addEventListener("lostpointercapture", stop);
+}
+
+/* ===== KÉO TOÀN BỘ BẢNG ===== */
+(function enablePan(){
+  let sx,sy,px,py, panning=false;
+  stages.book.addEventListener("pointerdown", e=>{
+    if(e.target.closest(".card")) return;
+    panning=true; stages.book.classList.add("grab"); stages.book.setPointerCapture(e.pointerId);
+    sx=e.clientX; sy=e.clientY; px=pan.x; py=pan.y;
+  });
+  stages.book.addEventListener("pointermove", e=>{
+    if(!panning) return;
+    pan.x=px+(e.clientX-sx); pan.y=py+(e.clientY-sy); applyPan();
+  });
+  const stop = ()=>{ panning=false; stages.book.classList.remove("grab"); };
+  stages.book.addEventListener("pointerup",          stop);
+  stages.book.addEventListener("pointercancel",      stop);
+  stages.book.addEventListener("lostpointercapture", stop);
+})();
+
+/* ===== THẺ CÀO ===== */
+function initScratch(canvas){
+  const ctx = canvas.getContext("2d");
+  const g   = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+  g.addColorStop(0,"#c9a3d6"); g.addColorStop(1,"#9a7fb0");
+  ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="rgba(255,255,255,.9)"; ctx.textAlign="center";
+  ctx.font="italic 26px 'Cormorant Garamond',serif";
+  ctx.fillText("Cào để xem", canvas.width/2, canvas.height/2);
+  ctx.globalCompositeOperation="destination-out";
+  let drawing=false;
+  const erase = (x,y)=>{ ctx.beginPath(); ctx.arc(x,y,18,0,7); ctx.fill(); };
+  const pos   = e=>{ const r=canvas.getBoundingClientRect(); return [(e.clientX-r.left)*canvas.width/r.width,(e.clientY-r.top)*canvas.height/r.height]; };
+  canvas.addEventListener("pointerdown", e=>{ e.stopPropagation(); drawing=true; canvas.setPointerCapture(e.pointerId); erase(...pos(e)); });
+  canvas.addEventListener("pointermove", e=>{ if(drawing){ e.stopPropagation(); erase(...pos(e)); } });
+  canvas.addEventListener("pointerup", ()=>{
+    drawing=false;
+    // đếm pixel đã cào; tự hiện ảnh khi cào được ~50%
+    const d=ctx.getImageData(0,0,canvas.width,canvas.height).data; let c=0;
+    for(let i=3; i<d.length; i+=4*40) if(d[i]===0) c++;
+    if(c > (d.length/(4*40))*0.45){ canvas.style.transition="opacity .5s"; canvas.style.opacity="0"; }
+  });
+}
+</script>
+</body>
+</html>
